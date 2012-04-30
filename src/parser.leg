@@ -1,0 +1,115 @@
+
+%{
+
+  #include "repl.hpp"
+
+  #define YYSTYPE Tn8 *
+  
+  #define DUP \
+    yy = strdup(yytext)
+  
+  #define CPY strcpy
+  
+  #define P printf
+  
+//  #define DEFER(S, ...) \
+//    sprintf(buf, S "\n", __VA_ARGS__); strcat(defer, buf);
+  
+  #define YY_INPUT(buf, result, max_size) { \
+      int yyc = ReplGetNextChar(); \
+      /*if(yyc == EOF)\
+	puts("next char = EOF");\
+      else\
+      	printf("next char = %c\n", yyc);*/\
+      result = (EOF == yyc) ? 0 : (*(buf)= yyc, 1); \
+      yyprintf((stderr, "<%c>", yyc)); \
+      }
+      
+  Tn8 n[80];
+  Tn8 ln[80];
+  Tn8 tn[80];
+  Tn8 tcn[80];
+  Tn8 s[80];
+
+  Ts32 i;
+  TBaseIndex theIndex;
+  Tn8 lineBuf[256];
+  TBoolean g_parsingFinished = FALSE;
+  TBoolean g_parsingError = FALSE;
+  TBoolean g_useIntValue = TRUE;
+
+%}
+
+  top_stmt   = ui_stmt EOL
+             | meta_stmt EOL
+             | stmt EOL                                    { g_parsingFinished = TRUE; P("finished stmt\n"); }           
+             | ( !EOL . )* EOL                             { g_parsingError = TRUE; }
+
+  ui_stmt    = < 'help' >                               { ReplDoHelp (); }
+             | < 'layer' > s layer_name                  { //ReplSetLayer (ln); }
+             | < 'quit' >                                { ReplBeginQuit (); }
+             
+  meta_stmt  = < 'describe' > s n:name                       { ReplDoDescribe (n); }
+  
+  stmt       = < 'print' > s n:name                           { ReplDoPrint (n); }
+             | < 'has' > s row_spec                        { ReplDoHasRow (tn, theIndex); }
+             | < 'has' > s col_spec                       { ReplDoHasCol (tcn); }
+             | < 'has' > s rec_spec                       { ReplDoHasRec (tcn, theIndex); }
+             | < 'get' > s rec_spec                      { ReplDoGetRec (tcn, theIndex); }
+             | < 'set' > s rec_spec s int_value         { ReplDoSetInt (tcn, theIndex, i); }
+             | < 'set' > s rec_spec s str_value         { ReplDoSetStr (tcn, theIndex, s); }
+             | < 'delete' > s rec_spec                        { ReplDoDeleteRec (tcn, theIndex); }
+             |  var_stmt 
+             
+  int_value  = < [0-9]+ >                                   { i = strtol (yytext, NULL, 10); }
+         
+  str_value  = < '"' > string < '"' >                       
+
+  value      = int_value                                    { g_useIntValue = TRUE; } 
+             | str_value                                    { g_useIntValue = FALSE; }
+
+  string     = < (!'"' .)* >                                { CPY (s, yytext); }
+
+  var_stmt   = rec_spec - < '=' > - int_value               { ReplDoSetInt (tcn, theIndex, i); }
+             | rec_spec - < '=' > - str_value               { ReplDoSetStr (tcn, theIndex, s); }
+             | rec_spec                                     { ReplDoGetRec (tcn, theIndex); }
+             
+  name       = < [-a-zA-Z_][-a-zA-Z_0-9]* >                 { DUP; }
+  
+  layer_name = < 'lazytables' >                            
+  
+  row_spec   = n:name s index                               { CPY (tn, n); }
+  
+  col_spec   = n1:name < ':' > n2:name                      { CPY (tcn, n1); strcat(tcn, ":"); strcat (tcn, n2); CPY (tn, n1); }
+  
+  rec_spec   = col_spec s index
+  
+  index      = int_value                                    { theIndex = strtol (yytext, NULL, 10); }
+             | < '{' > - complex_index - < '}' >            { theIndex = ReplComputeIndex (tn); ReplClearIndex(); } 
+  
+  complex_index 
+             = n:name s value                           { if(g_useIntValue) ReplAddIntToIndex (n, i); else ReplAddStrToIndex(n, s); }
+               (
+               < ',' > - n:name s value                 { if(g_useIntValue) ReplAddIntToIndex (n, i); else ReplAddStrToIndex(n, s); } 
+               )*   
+
+  ws         = ' ' | '\t' | nl
+  EOL        = nl | EOF
+  EOF        = !.
+  nl         = '\r\n' | '\r' | '\n'
+  s          = ws+ | EOF
+  -          = ws* | EOF?
+%%
+
+    TVoid
+ReplDo
+    (
+    Tnc8 *pUtterance
+    )
+    {
+    ReplSetInput(pUtterance, FALSE);
+    while(!g_parsingError && ReplGetCaretPosition() <= strlen(pUtterance))
+        YYPARSE();
+    }
+
+  

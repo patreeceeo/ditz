@@ -1,0 +1,4 @@
+Use the string as fundamental index type, but wrapped in a class that lets you treat it like an integer.
+
+Somehow integrate unit testing language features into the REPL.
+

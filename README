@@ -1,0 +1,89 @@
+
+
+
+
+The "Lazy Tables" Database Substrate:
+   
+   A database of any level of sophistication* can be built on top of the 
+   following minimal, gloriously unsophisticated definitions,
+   formulas and etc.
+   
+   There are multiple motivations for this approach:
+      1.) Allow developers to develop highly-optimized in-process databases
+      2.) Maximize transparency of databases built with Lazy Tables
+      as their foundation.
+      3.) Layers that add sophistication can use Lazy Tables to store meta-data.
+      In other words, Lazy Tables makes great "dog food." In other words, you 
+      can do really interesting/useful things by using Lazy Tables to store
+      information about information stored in Lazy Tables.
+   
+   Definitions:
+      STRING            Is a string of arbitrary length, composed of any
+                        character but null, delimited by null character.
+      NATURAL           Is any natural number (zero to positive infinity).
+      RESOURCE          ::= CHOICE { STRING, NATURAL }
+      RESOURCE_KEY      ::= UNIQUE { TABLE_KEY COLUMN_KEY }
+      RECORD            ::= RESOURCE
+      RECORD_MAP        ::= MAP { RESOURCE_KEY, RECORD }
+      TABLE_INFO_MAP    ::= MAP { TABLE_KEY, TABLE_INFO }
+      TABLE_INFO        ::= COLUMN_SET ROW_SET
+      COLUMN_SET        ::= SET { COLUMN_KEY }
+      ROW_SET           ::= SET { ROW_KEY }
+      TABLE_KEY         ::= UNIQUE { NATURAL }
+      COLUMN_KEY        ::= NATURAL 
+      ROW_KEY           ::= NATURAL
+      
+   Declarations:
+      let there be a TABLE_INFO_MAP m 
+      let there be a RECORD_MAP m'
+      
+   Formulas:   
+      HAS_TABLE [ t ] : BOOLEAN ::= 
+         there exists TABLE_INFO t such that
+            m has TABLE_KEY t          
+      
+      HAS_COLUMN [ t, c ] : BOOLEAN ::=
+         HAS_TABLE { t } and
+            COLUMN_SET of t contains c
+            
+      HAS_ROW [ t, c, r ] : BOOLEAN ::=
+         HAS_COLUMN { t, c } and
+            ROW_SET of t contains r
+      
+      ROW_COUNT [ t ] : NATURAL ::=
+         | x | such that HAS_TABLE { t } and ROW_SET of m of t is x or x is EMPTY_SET 
+      
+      HAS_RECORD [ u, r ] : BOOLEAN ::=
+         HAS_COLUMN { TABLE_KEY of u, COLUMN_KEY of u } 
+            and m' contains key u
+                  
+      GET_NATURAL [ u, r ] : NATURAL ::=
+         a NATURAL such that HAS_RECORD { u, r } or NIL
+         
+      GET_STRING [ u, r ] : STRING ::=
+         a STRING such that HAS_RECORD { u, r } or NIL
+         
+      SET_NATURAL [ u, r, n ] : NIL ::= 
+         let there exists an NATURAL n such that 
+            GET_NATURAL { u, r } is n
+             
+      SET_STRING [ u, r, s ] : NIL ::= 
+         let there exists a STRING s such that 
+            GET_STRING { u, r } is s
+         
+      DELETE_RECORD [ u, r ] : NIL ::=
+         let there not be u, r such that HAS_RECORD { u, r } 
+      
+
+
+*This includes databases supporting the following nifty features:
+   Distributed Hosting
+   Triggers
+   ACIDic Transactions
+   SQL
+   Rich Datatypes
+   Automatic mapping between Rich Datatypes.
+   Indexes/Views
+   Persistence
+   Relational Modeling
+

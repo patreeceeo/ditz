@@ -1,0 +1,7 @@
+set person:name 1 "Summer"
+set person:name 2 "Sammy"
+set person:job 2 "murse"
+set person:age 2 23
+set person:job 1 "barista"
+set person:name 12 "mr.rogers"
+print person

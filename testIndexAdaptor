@@ -1,0 +1,8 @@
+set person:name { dept 1, position 7 } "Sammy"
+set person:name { dept 2, position 6 } "Summer"
+set person:name { dept 3, position 5 } "Salty"
+set person:name { dept 4, position 4 } "Samuri"
+set person:name { dept 5, position 3 } "Sasha"
+set person:name { dept 6, position 2 } "Sssss"
+set person:name { dept 7, position 1 } "Seth"
+print person
